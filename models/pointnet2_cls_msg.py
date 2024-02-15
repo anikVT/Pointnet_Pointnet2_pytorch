@@ -36,7 +36,32 @@ class get_model(nn.Module):
         x = F.log_softmax(x, -1)
 
 
-        return x,l3_points,l2_points,l1_points
+        return x
+    
+    def extract_per_point_features(self, xyz):
+        """
+        Assuming xyz is [B, C, N] where B is batch size, C is channels (6 in your case for x,y,z,nx,ny,nz),
+        and N is the number of points (2500).
+        """
+        B, C, N = xyz.shape
+        if C > 3 and self.normal_channel:  # Assuming xyz includes normals
+            norm = xyz[:, 3:, :]
+            xyz = xyz[:, :3, :]
+        else:
+            norm = None
+        l1_xyz, l1_points = self.sa1(xyz, norm)
+        l2_xyz, l2_points = self.sa2(l1_xyz, l1_points)
+        l3_xyz, l3_points = self.sa3(l2_xyz, l2_points)  # This is likely where we need to adjust
+
+        # Ensure l3_points is what you're actually looking to extract. This might require 
+        # adjusting based on the actual implementation of self.sa3
+        # If l3_points does not directly give you per-point features as expected, you'll need to
+        # delve into how self.sa3 is implemented and ensure you're extracting the features 
+        # before any global aggregation.
+
+        return l3_points  # This should ideally be [B, N, 1024] if correctly intercepted
+
+
 
 
 class get_loss(nn.Module):
